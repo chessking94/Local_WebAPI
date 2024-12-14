@@ -13,77 +13,88 @@ namespace Local_WebAPI.Controllers
             public required string Repository { get; set; }
         }
 
-        //private readonly ILogger<DeploymentController> _logger;
-
-        //public DeploymentController(ILogger<DeploymentController> logger)
-        //{
-        //    _logger = logger;
-        //}
-
         // POST: api/Deployment
         [HttpPost]
-        public IActionResult PostDeployment([FromBody] DeploymentModel request)
+        public IActionResult Post_Deployment([FromBody] DeploymentModel request)
         {
-            // TODO: what user will this run under in iis01? Will need to make sure it has access to DB
-            // TODO: want logging in some way, probably write to a new table in HuntHome
-
-            if (request == null || string.IsNullOrWhiteSpace(request.Repository))
+            // TODO: want logging in some way, probably write to a new table in database
+            try
             {
-                return BadRequest("The parameter is required.");
-            }
-
-#if DEBUG
-            string? connectionString = Environment.GetEnvironmentVariable("ConnectionStringDebug");
-            var logMethod = modLogging.eLogMethod.CONSOLE;
-#else
-            string? connectionString = Environment.GetEnvironmentVariable("ConnectionStringRelease");
-            var logMethod = modLogging.eLogMethod.DATABASE;
-#endif
-            if (connectionString == null)
-            {
-                modLogging.AddLog(Program.programName, "C#", "DeploymentController.PostDeployment", modLogging.eLogLevel.CRITICAL, "Unable to read connection string", logMethod);
-                Environment.Exit(-1);
-            }
-
-            var command = new SqlCommand();
-            command.Connection = modDatabase.Connection(connectionString);
-            command.CommandType = System.Data.CommandType.Text;
-            command.CommandText = "SELECT RepoPath FROM HuntHome.dbo.Repositories WHERE RepoName = @RepoName";
-            command.Parameters.AddWithValue("@RepoName", request.Repository);
-            
-            var rtnval = command.ExecuteScalar();
-            if (rtnval == null)
-            {
-                // TODO: no record for the repo name, return 404 with message "Repository 'Name' does not exist"
-            }
-            else if (rtnval == DBNull.Value)
-            {
-                // TODO: return 404 with message "Repository 'Name' deployment path does not exist"
-            }
-            else
-            {
-                string repoPath = rtnval.ToString()!;
-                if (!Path.Exists(repoPath))
+                if (request == null || string.IsNullOrWhiteSpace(request.Repository))
                 {
-                    // TODO: return 404 with message "Repository 'Name' deployment path does not exist"
+                    return BadRequest("The parameter is required.");
                 }
 
+#if DEBUG
+                string? connectionString = Environment.GetEnvironmentVariable("ConnectionStringDebug");
+#else
+                string? connectionString = Environment.GetEnvironmentVariable("ConnectionStringRelease");
+#endif
+                var command = new SqlCommand();
                 try
                 {
-                    System.IO.File.Create(Path.Combine(repoPath, "deploy.txt"));
-                    // TODO: return 200 with message "Respository 'Name' queued for deployment"
+                    if (connectionString == null)
+                    {
+                        // modLogging.AddLog(Program.programName, "C#", "DeploymentController.Post_Deployment", modLogging.eLogLevel.CRITICAL, "Unable to read connection string", logMethod);
+                        return BadRequest("database connection not defined");
+                    }
+
+                    command.Connection = modDatabase.Connection(connectionString);
                 }
                 catch
                 {
-                    // TODO: return 500 with message "Failed to create deploy.txt for repository 'name'"
+                    return BadRequest("unable to connect to the database");
+                }
+
+                command.CommandType = System.Data.CommandType.Text;
+                command.CommandText = "SELECT RepoPath FROM HuntHome.dbo.Repositories WHERE RepoName = @RepoName";
+                command.Parameters.AddWithValue("@RepoName", request.Repository);
+
+                var rtnval = command.ExecuteScalar();
+                if (rtnval == null)
+                {
+                    // no record found in database
+                    return NotFound($"repository '{request.Repository}' does not exist");
+                }
+                else if (rtnval == DBNull.Value)
+                {
+                    // record found, no project path
+                    return NotFound("undefined deployment path");
+                }
+                else
+                {
+                    string repoPath = rtnval.ToString()!;
+                    if (!Path.Exists(repoPath))
+                    {
+                        // project path does not exist
+                        return NotFound($"deployment path '{repoPath}' does not exist");
+                    }
+
+                    try
+                    {
+                        using (var fileStream = System.IO.File.Create(Path.Combine(repoPath, "deploy.txt")))
+                        {
+                            // create an empty file, use 'using' to ensure the file lock is released
+                        }
+
+                        // succcessful request
+                        return Ok(new
+                        {
+                            Message = "queued for deployment",
+                            ReceivedParameter = request.Repository
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        // unable to create the deploy.txt for some reason
+                        return Problem(detail: $"failed to create 'deploy.txt': {ex.Message}", statusCode: 500);
+                    }
                 }
             }
-
-            return Ok(new
+            catch (Exception ex)
             {
-                Message = "Deployment started successfully.",
-                ReceivedParameter = request.Repository
-            });
+                return BadRequest($"catastrophic error: {ex.Message}");
+            }
         }
     }
 }

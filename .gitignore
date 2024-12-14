@@ -2,8 +2,10 @@
 .vs/
 bin/
 obj/
-My Project/
+Properties/
+.config/
 
 # files
 *.user
+*.http
 appsettings.json
