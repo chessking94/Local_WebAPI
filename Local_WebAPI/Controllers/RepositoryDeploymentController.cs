@@ -47,7 +47,7 @@ namespace Local_WebAPI.Controllers
                 }
 
                 command.CommandType = System.Data.CommandType.Text;
-                command.CommandText = "SELECT DeploymentQueued FROM HuntHome.dbo.Repositories WHERE RepoName = @RepoName";
+                command.CommandText = "SELECT DeploymentQueued FROM HuntHome.dev.Repositories WHERE RepoName = @RepoName";
                 command.Parameters.AddWithValue("@RepoName", request.Repository);
 
                 var rtnval = command.ExecuteScalar();
