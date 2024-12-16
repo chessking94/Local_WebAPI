@@ -47,7 +47,7 @@ namespace Local_WebAPI.Controllers
                 }
 
                 command.CommandType = System.Data.CommandType.Text;
-                command.CommandText = "SELECT RepoPath FROM HuntHome.dbo.Repositories WHERE RepoName = @RepoName";
+                command.CommandText = "SELECT DeploymentQueued FROM HuntHome.dbo.Repositories WHERE RepoName = @RepoName";
                 command.Parameters.AddWithValue("@RepoName", request.Repository);
 
                 var rtnval = command.ExecuteScalar();
@@ -56,25 +56,14 @@ namespace Local_WebAPI.Controllers
                     // no record found in database
                     return NotFound($"repository '{request.Repository}' does not exist");
                 }
-                else if (rtnval == DBNull.Value)
-                {
-                    // record found, no project path
-                    return NotFound("undefined deployment path");
-                }
                 else
                 {
-                    string repoPath = rtnval.ToString()!;
-                    if (!Path.Exists(repoPath))
-                    {
-                        // project path does not exist
-                        return NotFound($"deployment path '{repoPath}' does not exist");
-                    }
-
                     try
                     {
-                        using (var fileStream = System.IO.File.Create(Path.Combine(repoPath, "deploy.txt")))
+                        if (Convert.ToInt16(rtnval) == 0)
                         {
-                            // create an empty file, use 'using' to ensure the file lock is released
+                            command.CommandText = "UPDATE HuntHome.dev.Repositories SET DeploymentQueued = 1 WHERE RepoName = @RepoName";
+                            command.ExecuteNonQuery();
                         }
 
                         // succcessful request
@@ -86,8 +75,8 @@ namespace Local_WebAPI.Controllers
                     }
                     catch (Exception ex)
                     {
-                        // unable to create the deploy.txt for some reason
-                        return Problem(detail: $"failed to create 'deploy.txt': {ex.Message}", statusCode: 500);
+                        // unable to update the database for some reason
+                        return Problem(detail: $"failed to queue deployment: {ex.Message}", statusCode: 500);
                     }
                 }
             }
