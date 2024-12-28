@@ -46,12 +46,22 @@ namespace Local_WebAPI.Controllers
                     {
                         using (var shell = client.CreateShellStream("bash", 80, 24, 800, 600, 1024))
                         {
-                            string ssh_command = "sudo -S bash /srv/docker/restart_stacks.sh";
+                            string ssh_command = "cd /srv/docker && sudo git pull origin master";
                             shell.WriteLine(ssh_command);
                             shell.WriteLine(docker_pwd);
 
                             var output = new System.Text.StringBuilder();
                             string line;
+                            while ((line = shell.ReadLine(TimeSpan.FromSeconds(5))!) != null)
+                            {
+                                output.AppendLine(line);
+                            }
+
+                            ssh_command = "sudo -S bash /srv/docker/restart_stacks.sh";
+                            shell.WriteLine(ssh_command);
+                            shell.WriteLine(docker_pwd);
+
+                            output = new System.Text.StringBuilder();
                             while ((line = shell.ReadLine(TimeSpan.FromSeconds(5))!) != null)
                             {
                                 output.AppendLine(line);
