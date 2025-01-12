@@ -46,7 +46,12 @@ namespace Local_WebAPI.Controllers
                     {
                         using (var shell = client.CreateShellStream("bash", 80, 24, 800, 600, 1024))
                         {
-                            string ssh_command = "cd /srv/docker && sudo git pull origin master";
+                            // need to restore the directory first in case permissions changed
+                            string ssh_command = "cd /srv/docker && sudo git restore .";
+                            shell.WriteLine(ssh_command);
+                            shell.WriteLine(docker_pwd);
+
+                            ssh_command = "cd /srv/docker && sudo git pull origin master";
                             shell.WriteLine(ssh_command);
                             shell.WriteLine(docker_pwd);
 
