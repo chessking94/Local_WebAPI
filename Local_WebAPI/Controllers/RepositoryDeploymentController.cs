@@ -35,7 +35,6 @@ namespace Local_WebAPI.Controllers
                 {
                     if (connectionString == null)
                     {
-                        // modLogging.AddLog(Program.programName, "C#", "DeploymentController.Post_Deployment", modLogging.eLogLevel.CRITICAL, "Unable to read connection string", logMethod);
                         return BadRequest("database connection not defined");
                     }
 
