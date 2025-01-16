@@ -8,7 +8,7 @@ namespace Local_WebAPI.Controllers
     [Route("[controller]")]
     public class PendingDeploymentController : ControllerBase
     {
-        // GET: api/PendingDeployment
+        // GET: /PendingDeployment
         [HttpGet]
         public IActionResult Get_PendingDeployment()
         {

@@ -7,7 +7,7 @@ namespace Local_WebAPI.Controllers
     [Route("[controller]")]
     public class DockerDeploymentController : ControllerBase
     {
-        // POST: api/DockerDeployment
+        // POST: /DockerDeployment
         [HttpPost]
         public IActionResult Post_DockerDeployment()
         {

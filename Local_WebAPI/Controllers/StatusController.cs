@@ -6,7 +6,7 @@ namespace Local_WebAPI.Controllers
     [Route("[controller]")]
     public class StatusController : ControllerBase
     {
-        // GET: api/Status
+        // GET: /Status
         [HttpGet]
         public IActionResult Get_Status()
         {

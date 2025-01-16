@@ -13,7 +13,7 @@ namespace Local_WebAPI.Controllers
             public required string Repository { get; set; }
         }
 
-        // POST: api/Deployment
+        // POST: /Deployment
         [HttpPost]
         public IActionResult Post_Deployment([FromBody] DeploymentModel request)
         {
